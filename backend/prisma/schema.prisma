@@ -1,0 +1,364 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String   @map("password_hash")
+  avatarUrl    String?  @map("avatar_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  workspaces      UserWorkspace[]
+  createdBoards   Board[]         @relation("BoardCreator")
+  createdItems    Item[]          @relation("ItemCreator")
+  updates         Update[]
+  columnValues    ColumnValue[]   @relation("ColumnValueModifier")
+  automations     Automation[]    @relation("AutomationCreator")
+  notifications   Notification[]
+  sessions        Session[]
+
+  @@map("users")
+}
+
+model Session {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  refreshToken  String   @unique @map("refresh_token")
+  expiresAt     DateTime @map("expires_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  logoUrl   String?  @map("logo_url")
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users  UserWorkspace[]
+  boards Board[]
+
+  @@map("workspaces")
+}
+
+model UserWorkspace {
+  userId      String   @map("user_id")
+  workspaceId String   @map("workspace_id")
+  role        UserRole
+  joinedAt    DateTime @default(now()) @map("joined_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, workspaceId])
+  @@map("user_workspaces")
+}
+
+model Board {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  name        String
+  description String?
+  type        BoardType
+  settings    Json      @default("{}")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  createdById String    @map("created_by")
+
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy   User         @relation("BoardCreator", fields: [createdById], references: [id])
+  columns     Column[]
+  groups      Group[]
+  items       Item[]
+  views       View[]
+  automations Automation[]
+  webhooks    Webhook[]
+
+  @@index([workspaceId])
+  @@map("boards")
+}
+
+model Column {
+  id       String     @id @default(uuid())
+  boardId  String     @map("board_id")
+  title    String
+  type     ColumnType
+  settings Json       @default("{}")
+  position Int
+  width    Int?
+
+  board        Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  columnValues ColumnValue[]
+
+  @@index([boardId])
+  @@map("columns")
+}
+
+model Group {
+  id          String  @id @default(uuid())
+  boardId     String  @map("board_id")
+  title       String
+  color       String
+  position    Int
+  isCollapsed Boolean @default(false) @map("is_collapsed")
+
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  items Item[]
+
+  @@index([boardId])
+  @@map("groups")
+}
+
+model Item {
+  id           String   @id @default(uuid())
+  boardId      String   @map("board_id")
+  groupId      String   @map("group_id")
+  parentItemId String?  @map("parent_item_id")
+  name         String
+  position     Int
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdById  String   @map("created_by")
+
+  board        Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  group        Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  parentItem   Item?         @relation("ItemSubitems", fields: [parentItemId], references: [id], onDelete: Cascade)
+  createdBy    User          @relation("ItemCreator", fields: [createdById], references: [id])
+  subitems     Item[]        @relation("ItemSubitems")
+  columnValues ColumnValue[]
+  updates      Update[]
+  activities   Activity[]
+
+  @@index([boardId])
+  @@index([groupId])
+  @@index([parentItemId])
+  @@map("items")
+}
+
+model ColumnValue {
+  id               String   @id @default(uuid())
+  itemId           String   @map("item_id")
+  columnId         String   @map("column_id")
+  value            Json
+  lastModifiedById String   @map("last_modified_by")
+  lastModifiedAt   DateTime @default(now()) @updatedAt @map("last_modified_at")
+
+  item           Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  column         Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  lastModifiedBy User   @relation("ColumnValueModifier", fields: [lastModifiedById], references: [id])
+
+  @@unique([itemId, columnId])
+  @@index([itemId])
+  @@index([columnId])
+  @@map("column_values")
+}
+
+model Update {
+  id        String   @id @default(uuid())
+  itemId    String   @map("item_id")
+  userId    String   @map("user_id")
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  item        Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id])
+  attachments Attachment[]
+  mentions    Mention[]
+
+  @@index([itemId])
+  @@map("updates")
+}
+
+model Attachment {
+  id        String   @id @default(uuid())
+  updateId  String   @map("update_id")
+  fileName  String   @map("file_name")
+  fileUrl   String   @map("file_url")
+  fileSize  Int      @map("file_size")
+  mimeType  String   @map("mime_type")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  update Update @relation(fields: [updateId], references: [id], onDelete: Cascade)
+
+  @@index([updateId])
+  @@map("attachments")
+}
+
+model Mention {
+  id             String @id @default(uuid())
+  updateId       String @map("update_id")
+  mentionedUserId String @map("mentioned_user_id")
+
+  update Update @relation(fields: [updateId], references: [id], onDelete: Cascade)
+
+  @@index([updateId])
+  @@map("mentions")
+}
+
+model View {
+  id        String   @id @default(uuid())
+  boardId   String   @map("board_id")
+  name      String
+  type      ViewType
+  settings  Json     @default("{}")
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@index([boardId])
+  @@map("views")
+}
+
+model Automation {
+  id             String    @id @default(uuid())
+  boardId        String    @map("board_id")
+  name           String
+  trigger        Json
+  conditions     Json      @default("[]")
+  actions        Json
+  isActive       Boolean   @default(true) @map("is_active")
+  executionCount Int       @default(0) @map("execution_count")
+  lastExecutedAt DateTime? @map("last_executed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  createdById    String    @map("created_by")
+
+  board     Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  createdBy User  @relation("AutomationCreator", fields: [createdById], references: [id])
+
+  @@index([boardId])
+  @@map("automations")
+}
+
+model Webhook {
+  id        String   @id @default(uuid())
+  boardId   String   @map("board_id")
+  url       String
+  events    String[]
+  secret    String
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@index([boardId])
+  @@map("webhooks")
+}
+
+model Activity {
+  id         String       @id @default(uuid())
+  itemId     String       @map("item_id")
+  type       ActivityType
+  data       Json
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@map("activities")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id")
+  type      NotificationType
+  title     String
+  body      String
+  data      Json             @default("{}")
+  isRead    Boolean          @default(false) @map("is_read")
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  MEMBER
+  VIEWER
+  GUEST
+}
+
+enum BoardType {
+  MAIN
+  PRIVATE
+  SHAREABLE
+}
+
+enum ColumnType {
+  TEXT
+  NUMBERS
+  STATUS
+  PERSON
+  DATE
+  TIMELINE
+  TAGS
+  DROPDOWN
+  CHECKBOX
+  LINK
+  EMAIL
+  PHONE
+  LOCATION
+  FILES
+  RATING
+  PROGRESS
+  FORMULA
+  MIRROR
+  DEPENDENCY
+  CONNECT_BOARDS
+}
+
+enum ViewType {
+  TABLE
+  KANBAN
+  CALENDAR
+  GANTT
+  TIMELINE
+  CHART
+}
+
+enum ActivityType {
+  ITEM_CREATED
+  ITEM_UPDATED
+  ITEM_DELETED
+  ITEM_MOVED
+  COLUMN_VALUE_UPDATED
+  UPDATE_POSTED
+  FILE_UPLOADED
+  USER_MENTIONED
+}
+
+enum NotificationType {
+  MENTION
+  ASSIGNMENT
+  UPDATE
+  DUE_DATE
+  AUTOMATION
+  SYSTEM
+}
