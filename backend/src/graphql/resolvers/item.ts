@@ -458,7 +458,7 @@ export const itemResolvers = {
   Subscription: {
     itemCreated: {
       subscribe: (_: any, { boardId }: any) => pubsub.asyncIterator(['ITEM_CREATED']),
-      resolve: (payload: any) => {
+      resolve: (payload: any, { boardId }: any) => {
         if (payload.boardId === boardId) {
           return payload.itemCreated;
         }
@@ -468,7 +468,7 @@ export const itemResolvers = {
 
     itemUpdated: {
       subscribe: (_: any, { boardId }: any) => pubsub.asyncIterator(['ITEM_UPDATED']),
-      resolve: (payload: any) => {
+      resolve: (payload: any, { boardId }: any) => {
         if (payload.boardId === boardId) {
           return payload.itemUpdated;
         }
@@ -478,7 +478,7 @@ export const itemResolvers = {
 
     itemDeleted: {
       subscribe: (_: any, { boardId }: any) => pubsub.asyncIterator(['ITEM_DELETED']),
-      resolve: (payload: any) => {
+      resolve: (payload: any, { boardId }: any) => {
         if (payload.boardId === boardId) {
           return payload.itemId;
         }
@@ -488,7 +488,7 @@ export const itemResolvers = {
 
     columnValueUpdated: {
       subscribe: (_: any, { boardId }: any) => pubsub.asyncIterator(['COLUMN_VALUE_UPDATED']),
-      resolve: (payload: any) => {
+      resolve: (payload: any, { boardId }: any) => {
         if (payload.boardId === boardId) {
           return payload.columnValueUpdated;
         }
@@ -498,7 +498,7 @@ export const itemResolvers = {
 
     updateCreated: {
       subscribe: (_: any, { itemId }: any) => pubsub.asyncIterator(['UPDATE_CREATED']),
-      resolve: (payload: any) => {
+      resolve: (payload: any, { itemId }: any) => {
         if (payload.itemId === itemId) {
           return payload.updateCreated;
         }
