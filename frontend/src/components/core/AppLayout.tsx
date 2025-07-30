@@ -1,4 +1,4 @@
-import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom'
+import { Outlet, useLocation, Link } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
@@ -6,7 +6,6 @@ import { useState } from 'react'
 export default function AppLayout() {
   const { user, logout } = useAuthStore()
   const location = useLocation()
-  const navigate = useNavigate()
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
 
   const getBreadcrumbs = () => {

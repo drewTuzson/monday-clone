@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -292,7 +292,7 @@ export default function LoginPage() {
             </form>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   )
 }
