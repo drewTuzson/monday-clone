@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { Toaster } from './components/ui/toaster'
 
 // Pages
+import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import BoardPage from './pages/board/BoardPage'
@@ -19,27 +20,23 @@ function App() {
     initialize()
   }, [initialize])
 
-  if (!isAuthenticated) {
-    return (
-      <>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="*" element={<LoginPage />} />
-        </Routes>
-        <Toaster />
-      </>
-    )
-  }
-
   return (
     <>
       <Routes>
-        <Route path="/" element={<AppLayout />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="workspace/:workspaceId" element={<WorkspacePage />} />
-          <Route path="board/:boardId" element={<BoardPage />} />
-        </Route>
+        {/* Public routes */}
+        <Route path="/landing" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+        
+        {/* Protected routes */}
+        {isAuthenticated ? (
+          <Route path="/" element={<AppLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="workspace/:workspaceId" element={<WorkspacePage />} />
+            <Route path="board/:boardId" element={<BoardPage />} />
+          </Route>
+        ) : (
+          <Route path="*" element={<LandingPage />} />
+        )}
       </Routes>
       <Toaster />
     </>
