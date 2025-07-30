@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import CreateWorkspaceModal from '@/components/workspace/CreateWorkspaceModal'
+import CreateBoardModal from '@/components/board/CreateBoardModal'
 import OnboardingFlow from '@/components/onboarding/OnboardingFlow'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import { DashboardSkeleton, FullPageLoading } from '@/components/ui/loading'
@@ -31,6 +32,7 @@ export default function DashboardPage() {
   const { data, loading, error } = useQuery(GET_WORKSPACES)
   const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isCreateBoardModalOpen, setIsCreateBoardModalOpen] = useState(false)
   const { shouldShowOnboarding, isChecking, completeOnboarding } = useOnboarding()
 
   if (isChecking) {
@@ -201,17 +203,25 @@ export default function DashboardPage() {
                           {currentWorkspace.boards.length} boards
                         </p>
                       </div>
-                      <Button 
-                        variant="outline"
-                        className="flex items-center space-x-2"
-                        onClick={() => {
-                          // Navigate to workspace page when implemented
-                          console.log(`Navigate to workspace ${currentWorkspace.id}`)
-                        }}
-                      >
-                        <span>View Workspace</span>
-                        <span>→</span>
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        <Button 
+                          onClick={() => setIsCreateBoardModalOpen(true)}
+                          className="bg-monday-blue hover:bg-monday-blue/90"
+                        >
+                          <span>+ Create Board</span>
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          className="flex items-center space-x-2"
+                          onClick={() => {
+                            // Navigate to workspace page when implemented
+                            console.log(`Navigate to workspace ${currentWorkspace.id}`)
+                          }}
+                        >
+                          <span>View Workspace</span>
+                          <span>→</span>
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
@@ -219,8 +229,8 @@ export default function DashboardPage() {
                     {currentWorkspace.boards.length === 0 ? (
                       <BoardEmptyState 
                         workspaceName={currentWorkspace.name}
-                        onCreateBoard={() => console.log('Create board')}
-                        onViewTemplates={() => console.log('View templates')}
+                        onCreateBoard={() => setIsCreateBoardModalOpen(true)}
+                        onViewTemplates={() => setIsCreateBoardModalOpen(true)}
                       />
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -280,6 +290,15 @@ export default function DashboardPage() {
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
         />
+        
+        {currentWorkspace && (
+          <CreateBoardModal
+            isOpen={isCreateBoardModalOpen}
+            onClose={() => setIsCreateBoardModalOpen(false)}
+            workspaceId={currentWorkspace.id}
+            workspaceName={currentWorkspace.name}
+          />
+        )}
       </div>
     </div>
   )
